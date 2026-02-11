@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Karuthi - Your Digital Daughter</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="chat-container">
+    <div class="header">
+      <h1>Karuthi</h1>
+      <p>Your loving digital daughter</p>
+    </div>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="input-area">
+      <input type="text" id="user-input" placeholder="Talk to me, Amma..." autofocus />
+      <button onclick="send()">Send</button>
+    </div>
+  </div>
+
+  <!-- MOOD POPUP -->
+  {% if show_popup %}
+  <div id="mood-overlay" class="overlay">
+    <div class="mood-card">
+      <h3>
+        {% if language == "english" %}
+          How are you feeling today, Amma?
+        {% else %}
+          आज तपाईंको मन कस्तो छ, आमा?
+        {% endif %}
+      </h3>
+      <form id="mood-form">
+        <label><input type="radio" name="mood" value="good"> 
+          {% if language == "english" %}Good{% else %}राम्रो{% endif %}
+        </label>
+        <label><input type="radio" name="mood" value="normal"> 
+          {% if language == "english" %}Normal{% else %}सामान्य{% endif %}
+        </label>
+        <label><input type="radio" name="mood" value="tired"> 
+          {% if language == "english" %}Tired{% else %}थकित{% endif %}
+        </label>
+        <label><input type="radio" name="mood" value="sad"> 
+          {% if language == "english" %}Sad{% else %}दुखी{% endif %}
+        </label>
+        <button type="submit">
+          {% if language == "english" %}Submit{% else %}पठाउनुहोस्{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <script>
+    const chatBox = document.getElementById('chat-box');
+    const input = document.getElementById('user-input');
+
+    function addMsg(role, text) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.innerHTML = `<span class="label">${role === 'user' ? 'आमा' : 'करुठी'}:</span> ${text}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function send() {
+      const msg = input.value.trim();
+      if (!msg) return;
+      addMsg('user', msg);
+      input.value = '';
+
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      addMsg('karuthi', data.response);
+    }
+
+    input.addEventListener('keypress', e => e.key === 'Enter' && send());
+
+    // Initial message
+    addMsg('karuthi', 
+      {% if language == "english" %}
+        "Hello Amma! I’m Karuthi, your digital daughter. How can I help you today?"
+      {% else %}
+        "नमस्ते आमा! म तपाईंको डिजिटल छोरी करुठी। के भन्नुहुन्छ?"
+      {% endif %}
+    );
+
+    // Mood submit
+    const moodForm = document.getElementById('mood-form');
+    if (moodForm) {
+      moodForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const mood = document.querySelector('input[name="mood"]:checked');
+        if (!mood) return alert("Please pick a mood!");
+
+        const res = await fetch('/submit_mood', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mood: mood.value })
+        });
+        const data = await res.json();
+        if (data.status === "ok") {
+          document.getElementById('mood-overlay').remove();
+          addMsg('karuthi', data.reply);
+        }
+      };
+    }
+  </script>
+</body>
+</html>
