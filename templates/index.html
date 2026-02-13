@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Karuthi Dashboard</title>
+  <style>
+    body { font-family: Arial; margin: 20px; background: #f0f8ff; }
+    #chat { height: 70vh; overflow-y: scroll; background: white; padding: 10px; border: 1px solid #ccc; border-radius: 10px; }
+    .msg { margin: 10px 0; padding: 10px; border-radius: 10px; max-width: 70%; }
+    .aama { background: #e3f2fd; align-self: flex-start; }
+    .you { background: #c8e6c9; align-self: flex-end; margin-left: auto; }
+    #input { width: 80%; padding: 10px; font-size: 16px; }
+    button { padding: 10px 20px; background: #2196F3; color: white; border: none; }
+  </style>
+</head>
+<body>
+  <h1>Karuthi Live Chat</h1>
+  <div id="chat"></div>
+  <br>
+  <input id="input" placeholder="Type message to Aama..." />
+  <button onclick="send()">Send</button>
+
+  <script>
+    let lastChatId = null;
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+
+    function addMessage(msg) {
+      const div = document.createElement('div');
+      div.className = `msg ${msg.sender === 'You' ? 'you' : 'aama'}`;
+      div.innerHTML = `<b>${msg.sender}:</b> ${msg.text}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      
+      if (msg.sender !== 'You') lastChatId = msg.chat_id;
+    }
+
+    function loadMessages() {
+      fetch('/messages')
+        .then(r => r.json())
+        .then(msgs => {
+          msgs.slice(chat.children.length).forEach(addMessage);
+        });
+    }
+
+    setInterval(loadMessages, 1000);
+
+    function send() {
+      const text = input.value.trim();
+      if (text && lastChatId) {
+        fetch('/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, chat_id: lastChatId })
+        });
+        input.value = '';
+      }
+    }
+
+    input.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') send();
+    });
+  </script>
+</body>
+</html>
