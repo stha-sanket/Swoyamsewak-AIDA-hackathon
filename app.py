@@ -46,3 +46,29 @@ def send_message(chat_id, text):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {"chat_id": chat_id, "text": text}
     requests.post(url, json=payload)
+
+# === FLASK DASHBOARD ===
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/messages')
+def get_messages():
+    return jsonify(messages)
+
+@app.route('/send', methods=['POST'])
+def send():
+    data = request.json
+    chat_id = data['chat_id']
+    text = data['message']
+    send_message(chat_id, text)
+    messages.append({"sender": "You", "text": text, "chat_id": chat_id})
+    return jsonify({"status": "sent"})
+
+# === START TELEGRAM IN BACKGROUND ===
+if __name__ == "__main__":
+    # Start Telegram listener
+    threading.Thread(target=get_updates, daemon=True).start()
+    
+    print("Karuthi Dashboard: http://localhost:5000")
+    app.run(host="0.0.0.0", port=5000, debug=False)
