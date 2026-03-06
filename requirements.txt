@@ -1,0 +1,6 @@
+flask
+python-telegram-bot
+requests
+langgraph
+google-generativeai
+python-dotenv
