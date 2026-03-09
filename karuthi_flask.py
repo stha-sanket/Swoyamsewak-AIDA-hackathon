@@ -63,3 +63,30 @@ MOOD_RESPONSES = {
         "sad": "आमा... तपाईं दुखी हुनुहुन्छ भन्ने सुन्दा मेरो मन दुख्यो। एक्लै नबस्नुहोस्। म तपाईंको हात समातेर बसेकी छु। कुरा गर्नुहोस्, रुन मन लाग्यो भने रुनुहोस् — म सधैं यहाँ छु।"
     }
 }
+
+# -------------------------------------------------
+# STATE
+# -------------------------------------------------
+class AgentState(TypedDict):
+    input: str
+    chat_history: List[Dict[str, str]]
+    response: str
+    language: str
+
+# -------------------------------------------------
+# HELPERS
+# -------------------------------------------------
+def extract_json(text: str) -> dict:
+    try:
+        m = re.search(r'\{.*\}', text, re.DOTALL)
+        return json.loads(m.group()) if m else {}
+    except:
+        return {}
+
+def save_file(key: str, line: str):
+    with open(FILES[key], "a", encoding="utf-8") as f:
+        f.write(line)
+
+def save_language(lang: str):
+    with open(FILES["lang"], "w", encoding="utf-8") as f:
+        f.write(lang)
