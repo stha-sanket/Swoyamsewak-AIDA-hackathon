@@ -90,3 +90,24 @@ def save_file(key: str, line: str):
 def save_language(lang: str):
     with open(FILES["lang"], "w", encoding="utf-8") as f:
         f.write(lang)
+
+# -------------------------------------------------
+# NODES
+# -------------------------------------------------
+def detect_intent(state: AgentState) -> dict:
+    txt = state["input"].lower()
+    if any(p in txt for p in ["english", "speak in english", "english ma"]):
+        return {"intent": "switch", "language": "english"}
+    if any(p in txt for p in ["nepali", "नेपाली", "nepali ma"]):
+        return {"intent": "switch", "language": "nepali"}
+
+    time_kw = ["am", "pm", "बिहान", "दिउँसो", "बेलुका", "at ", "मा ", "बजे"]
+    med_kw = ["pill", "tablet", "ausadhi", "medicine", "paracetamol", "remind", "खानु", "lanu"]
+    if any(t in txt for t in time_kw) and any(m in txt for m in med_kw):
+        return {"intent": "medicine"}
+
+    item_kw = ["note", "remember", "is in", "are in", "राखेको", "ठाउँ", "box", "drawer"]
+    if any(k in txt for k in item_kw):
+        return {"intent": "item"}
+
+    return {"intent": "chat"}
