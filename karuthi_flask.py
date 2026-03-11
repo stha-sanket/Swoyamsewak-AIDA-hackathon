@@ -111,3 +111,43 @@ def detect_intent(state: AgentState) -> dict:
         return {"intent": "item"}
 
     return {"intent": "chat"}
+
+
+def save_medicine(state: AgentState) -> dict:
+    lang = state.get("language", "nepali")
+    txt = state["input"]
+    prompt = f'Extract medicine reminder with time from: "{txt}"\nReturn JSON: {{"medicine": "...", "pills": 1, "times": ["8 AM"]}}\nIf none → {{"medicine": null}}\nJSON only.'
+    if lang == "nepali":
+        prompt = f'समयसहित औषधि निकाल: "{txt}"\nJSON: {{"medicine": "...", "pills": 1, "times": ["बिहान ८"]}}\nहोइन → {{"medicine": null}}\nJSON मात्र।'
+
+    try:
+        data = extract_json(model.generate_content(prompt).text)
+        med = data.get("medicine")
+        if not med: return {"response": "ठिक छ आमा।" if lang == "nepali" else "Got it!"}
+        pills = data.get("pills", 1)
+        times = ", ".join(data.get("times", []))
+        line = f"{datetime.now():%Y-%m-%d %H:%M} | {med} | {pills} pill(s) | {times}\n"
+        save_file("reminders", line)
+        return {"response": f"Saved! I'll remind you at {times}." if lang == "english" else f"बचत भयो! म {times} मा सम्झाउँछु।"}
+    except Exception as e:
+        print(e)
+        return {"response": "ठिक छ।"}
+
+def save_item_location(state: AgentState) -> dict:
+    lang = state.get("language", "nepali")
+    txt = state["input"]
+    prompt = f'Extract item & location: "{txt}"\nJSON: {{"item": "...", "location": "..."}}\nNone → {{"item": null}}\nJSON only.'
+    if lang == "nepali":
+        prompt = f'वस्तु र ठाउँ निकाल: "{txt}"\nJSON: {{"item": "...", "location": "..."}}\nहोइन → {{"item": null}}\nJSON मात्र।'
+
+    try:
+        data = extract_json(model.generate_content(prompt).text)
+        item = data.get("item")
+        if not item: return {"response": "ठिक छ आमा।"}
+        loc = data.get("location", "unknown")
+        line = f"{datetime.now():%Y-%m-%d %H:%M} | {item} → {loc}\n"
+        save_file("items", line)
+        return {"response": f"Saved! {item} is in {loc}." if lang == "english" else f"बचत भयो! {item} {loc} मा छ।"}
+    except Exception as e:
+        print(e)
+        return {"response": "ठिक छ।"}
