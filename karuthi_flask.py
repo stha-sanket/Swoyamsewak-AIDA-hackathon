@@ -151,3 +151,18 @@ def save_item_location(state: AgentState) -> dict:
     except Exception as e:
         print(e)
         return {"response": "ठिक छ।"}
+    
+
+def normal_chat(state: AgentState) -> dict:
+    lang = state.get("language", "nepali")
+    prompt = f"Reply warmly in {'English' if lang=='english' else 'Nepali'}.\nAmma: {state['input']}"
+    try:
+        return {"response": model.generate_content(prompt).text.strip()}
+    except:
+        return {"response": "I'm here, Amma." if lang == "english" else "म यहाँ छु आमा।"}
+
+def switch_language(state: AgentState) -> dict:
+    new_lang = state.get("language", "english")
+    save_language(new_lang)
+    msg = "Hello Amma! Now in English." if new_lang == "english" else "ठिक छ आमा, अब नेपालीमा।"
+    return {"response": msg, "language": new_lang}
