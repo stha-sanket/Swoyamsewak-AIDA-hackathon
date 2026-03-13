@@ -166,3 +166,26 @@ def switch_language(state: AgentState) -> dict:
     save_language(new_lang)
     msg = "Hello Amma! Now in English." if new_lang == "english" else "ठिक छ आमा, अब नेपालीमा।"
     return {"response": msg, "language": new_lang}
+
+
+# -------------------------------------------------
+# GRAPH
+# -------------------------------------------------
+graph = StateGraph(AgentState)
+for node in (detect_intent, save_medicine, save_item_location, normal_chat, switch_language):
+    graph.add_node(node.__name__, node)
+
+graph.add_conditional_edges(
+    "detect_intent",
+    lambda s: s["intent"],
+    {
+        "medicine": "save_medicine",
+        "item": "save_item_location",
+        "chat": "normal_chat",
+        "switch": "switch_language"
+    }
+)
+for n in ("save_medicine", "save_item_location", "normal_chat", "switch_language"):
+    graph.add_edge(n, END)
+graph.set_entry_point("detect_intent")
+agent = graph.compile()
