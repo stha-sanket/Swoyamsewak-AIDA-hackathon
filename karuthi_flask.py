@@ -112,7 +112,6 @@ def detect_intent(state: AgentState) -> dict:
 
     return {"intent": "chat"}
 
-
 def save_medicine(state: AgentState) -> dict:
     lang = state.get("language", "nepali")
     txt = state["input"]
@@ -151,7 +150,6 @@ def save_item_location(state: AgentState) -> dict:
     except Exception as e:
         print(e)
         return {"response": "ठिक छ।"}
-    
 
 def normal_chat(state: AgentState) -> dict:
     lang = state.get("language", "nepali")
@@ -166,7 +164,6 @@ def switch_language(state: AgentState) -> dict:
     save_language(new_lang)
     msg = "Hello Amma! Now in English." if new_lang == "english" else "ठिक छ आमा, अब नेपालीमा।"
     return {"response": msg, "language": new_lang}
-
 
 # -------------------------------------------------
 # GRAPH
@@ -189,3 +186,66 @@ for n in ("save_medicine", "save_item_location", "normal_chat", "switch_language
     graph.add_edge(n, END)
 graph.set_entry_point("detect_intent")
 agent = graph.compile()
+
+# -------------------------------------------------
+# ROUTES
+# -------------------------------------------------
+@app.route("/")
+def index():
+    today = date.today().isoformat()
+    mood_date = session.get("mood_date")
+    show_popup = mood_date != today
+
+    if "chat_history" not in session:
+        session["chat_history"] = []
+        session["language"] = language
+        session["mood_date"] = today if not show_popup else None
+
+    return render_template("chat.html", show_popup=show_popup, language=language)
+
+@app.route("/submit_mood", methods=["POST"])
+def submit_mood():
+    mood = request.json.get("mood")
+    lang = session.get("language", "nepali")
+    if mood in ["good", "normal", "tired", "sad"]:
+        line = f"{datetime.now():%Y-%m-%d %H:%M} | Mood: {mood.capitalize()}\n"
+        save_file("mood", line)
+        session["mood_date"] = date.today().isoformat()
+        session.modified = True
+
+        emotional_reply = MOOD_RESPONSES[lang][mood]
+        return jsonify({"status": "ok", "reply": emotional_reply})
+    return jsonify({"status": "error"}), 400
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    msg = request.json.get("message", "").strip()
+    if not msg:
+        return jsonify({"response": "Please say something, Amma!"})
+
+    if msg.lower() in {"exit", "quit", "bye", "बाई"}:
+        session.clear()
+        return jsonify({"response": "Take care, Amma! I love you forever."})
+
+    history = session.get("chat_history", [])
+    history.append({"role": "user", "text": msg})
+
+    result = agent.invoke({
+        "input": msg,
+        "chat_history": history,
+        "response": "",
+        "language": session.get("language", "nepali")
+    })
+
+    resp = result.get("response", "")
+    lang = result.get("language", session.get("language", "nepali"))
+
+    history.append({"role": "karuthi", "text": resp})
+    session["chat_history"] = history[-30:]
+    session["language"] = lang
+    session.modified = True
+
+    return jsonify({"response": resp})
+
+if __name__ == "__main__":
+    app.run(debug=True, port=5000)
