@@ -42,7 +42,7 @@ Karuthi is a bilingual (English & Nepali) AI assistant built specifically for el
    ```
 
 2. **Install dependencies**:
-   ```bash
+   ```(bash)
    pip install -r requirements.txt
    ```
 
